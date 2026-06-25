@@ -35,8 +35,36 @@ export default function NewContractPage() {
   const [testStatusCode, setTestStatusCode] = useState<number | null>(null)
   const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null)
   const testAbortRef = useRef<AbortController | null>(null)
+  const contractIdDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
-  useEffect(() => () => testAbortRef.current?.abort(), [])
+  useEffect(() => () => {
+    testAbortRef.current?.abort()
+    if (contractIdDebounceRef.current) clearTimeout(contractIdDebounceRef.current)
+  }, [])
+
+  function handleContractIdChange(value: string) {
+    setContractId(value)
+    setErrors((prev) => ({ ...prev, contract_id: undefined }))
+    if (contractIdDebounceRef.current) clearTimeout(contractIdDebounceRef.current)
+    contractIdDebounceRef.current = setTimeout(() => {
+      if (value.trim() && !isValidContractId(value.trim())) {
+        setErrors((prev) => ({
+          ...prev,
+          contract_id: 'Must be a valid Soroban contract address (starts with C, 56 chars)',
+        }))
+      }
+    }, 400)
+  }
+
+  function handleContractIdBlur() {
+    if (contractIdDebounceRef.current) clearTimeout(contractIdDebounceRef.current)
+    if (contractId.trim() && !isValidContractId(contractId.trim())) {
+      setErrors((prev) => ({
+        ...prev,
+        contract_id: 'Must be a valid Soroban contract address (starts with C, 56 chars)',
+      }))
+    }
+  }
 
   function handleWalletConnect() {
     setErrors((prev) => ({ ...prev, wallet: undefined }))
@@ -202,7 +230,8 @@ export default function NewContractPage() {
             type="text"
             placeholder="CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"
             value={contractId}
-            onChange={(e) => { setContractId(e.target.value); setErrors((prev) => ({ ...prev, contract_id: undefined })) }}
+            onChange={(e) => handleContractIdChange(e.target.value)}
+            onBlur={handleContractIdBlur}
             className="w-full bg-zinc-900 border border-zinc-700 rounded-lg px-3 py-2.5 text-sm font-mono text-zinc-100 placeholder-zinc-600 focus:outline-none focus:border-indigo-500 transition-colors"
           />
           <p className="mt-1.5 text-xs text-zinc-400">Soroban contract addresses start with <span className="font-mono">C</span> and are 56 characters long</p>
