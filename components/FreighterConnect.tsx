@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import { Network } from '@/types'
 
 declare global {
   interface Window {
@@ -15,13 +16,27 @@ declare global {
 
 const WALLET_STORAGE_KEY = 'freighter_public_key'
 
+const FREIGHTER_NETWORK_LABELS: Record<string, string> = {
+  PUBLIC: 'MAINNET',
+  TESTNET: 'TESTNET',
+  FUTURENET: 'FUTURENET',
+}
+
+const PAGE_NETWORK_TO_FREIGHTER: Record<Network, string> = {
+  mainnet: 'PUBLIC',
+  testnet: 'TESTNET',
+  futurenet: 'FUTURENET',
+}
+
 interface FreighterConnectProps {
   className?: string
   onConnect?: (publicKey: string) => void
+  pageNetwork?: Network
 }
 
-export default function FreighterConnect({ onConnect, className = '' }: FreighterConnectProps) {
+export default function FreighterConnect({ onConnect, className = '', pageNetwork }: FreighterConnectProps) {
   const [publicKey, setPublicKey] = useState<string | null>(null)
+  const [walletNetwork, setWalletNetwork] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [isConnecting, setIsConnecting] = useState(false)
@@ -41,7 +56,9 @@ export default function FreighterConnect({ onConnect, className = '' }: Freighte
       const connected = await window.freighter.isConnected()
       if (connected) {
         const key = await window.freighter.getPublicKey()
+        const network = await window.freighter.getNetwork()
         setPublicKey(key)
+        setWalletNetwork(network)
         window.__freighterPublicKey = key
         onConnect?.(key)
       }
@@ -74,6 +91,7 @@ export default function FreighterConnect({ onConnect, className = '' }: Freighte
       }
 
       setPublicKey(key)
+      setWalletNetwork(network)
       window.__freighterPublicKey = key
       localStorage.setItem(WALLET_STORAGE_KEY, key)
       onConnect?.(key)
@@ -88,6 +106,7 @@ export default function FreighterConnect({ onConnect, className = '' }: Freighte
 
   function disconnect() {
     setPublicKey(null)
+    setWalletNetwork(null)
     localStorage.removeItem(WALLET_STORAGE_KEY)
   }
 
@@ -100,11 +119,19 @@ export default function FreighterConnect({ onConnect, className = '' }: Freighte
   }
 
   if (publicKey) {
+    const networkLabel = walletNetwork
+      ? (FREIGHTER_NETWORK_LABELS[walletNetwork] ?? walletNetwork)
+      : null
+    const isMismatch =
+      pageNetwork != null &&
+      walletNetwork != null &&
+      walletNetwork !== PAGE_NETWORK_TO_FREIGHTER[pageNetwork]
     return (
       <div className={`flex items-center gap-2 ${className}`}>
         <span className="w-2 h-2 rounded-full bg-emerald-400 inline-block" />
-        <span className="text-sm text-zinc-300 font-mono">
+        <span className={`text-sm font-mono ${isMismatch ? 'text-amber-400' : 'text-zinc-300'}`}>
           {publicKey.slice(0, 4)}...{publicKey.slice(-4)}
+          {networkLabel ? ` · ${networkLabel}` : ''}
         </span>
         <button
           onClick={disconnect}
