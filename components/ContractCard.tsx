@@ -2,7 +2,7 @@ import Link from 'next/link'
 import { useEffect, useState } from 'react'
 import { WatchedContract } from '@/types'
 import NetworkBadge from './NetworkBadge'
-import { truncateId } from '@/lib/stellar'
+import { truncateId, explorerContractUrl } from '@/lib/stellar'
 import { formatDate } from '@/lib/format'
 
 interface ContractCardProps {
@@ -38,7 +38,22 @@ export default function ContractCard({ contract, lastAlertTime, highlight }: Con
             {truncateId(contract.contract_id)}
           </p>
         </div>
-        <NetworkBadge network={contract.network} />
+        <div className="flex items-center gap-2 flex-shrink-0">
+          <NetworkBadge network={contract.network} />
+          <a
+            href={explorerContractUrl(contract.network, contract.contract_id)}
+            target="_blank"
+            rel="noopener noreferrer"
+            onClick={(e) => e.stopPropagation()}
+            className="text-zinc-500 hover:text-zinc-300 transition-colors"
+            title="View on Stellar Expert"
+            aria-label="View on Stellar Expert"
+          >
+            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+            </svg>
+          </a>
+        </div>
       </div>
 
       {/* Webhook status indicator */}
