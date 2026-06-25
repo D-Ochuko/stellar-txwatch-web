@@ -6,7 +6,7 @@ import { Network } from '@/types'
 import EmptyState from './EmptyState'
 import { truncateId } from '@/lib/stellar'
 import { formatDateTime } from '@/lib/format'
-import { useState } from 'react'
+import { useSearchParams, useRouter } from 'next/navigation'
 import AlertRuleBadge from './AlertRuleBadge'
 
 interface WebhookLogProps {
@@ -44,7 +44,24 @@ function exportCSV(alerts: AlertPayload[]) {
 }
 
 export default function WebhookLog({ alerts, network }: WebhookLogProps) {
-  const [selectedFilter, setSelectedFilter] = useState<AlertRuleType | null>(null)
+  const router = useRouter()
+  const searchParams = useSearchParams()
+
+  const filterParam = searchParams.get('filter')
+  const selectedFilter: AlertRuleType | null =
+    filterParam && (ruleTypes as string[]).includes(filterParam)
+      ? (filterParam as AlertRuleType)
+      : null
+
+  function setSelectedFilter(filter: AlertRuleType | null) {
+    const params = new URLSearchParams(searchParams.toString())
+    if (filter) {
+      params.set('filter', filter)
+    } else {
+      params.delete('filter')
+    }
+    router.replace(`?${params.toString()}`)
+  }
 
   const filteredAlerts = selectedFilter
     ? alerts.filter((a) => a.rule_triggered === selectedFilter)
